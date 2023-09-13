@@ -7,6 +7,7 @@ import {ReactSortable} from "react-sortablejs"
 
 export default function ProductForm({
                                         _id,
+                                        brand:existingBrand,
                                         title:existingTitle,
                                         description:existingDescription,
                                         price:existingPrice,
@@ -16,6 +17,7 @@ export default function ProductForm({
 }) {
     const[title, setTitle] = useState(existingTitle || '');
     const[description, setDescription] = useState(existingDescription || '');
+    const[brand, setBrand] = useState(existingBrand || '');
     const[price, setPrice] = useState(existingPrice || '');
     const[gotoProducts,setgotoProducts] = useState(false);
     const [images,setImages] = useState(existingImagse||[]);
@@ -23,6 +25,28 @@ export default function ProductForm({
     const [category, setcategory] = useState(''||existingCategory)
     const [productProperties, setProductProperties] = useState(assignedProperties || {})
     const router = useRouter();
+    const [draggingOver, setDraggingOver] = useState(false);
+
+    const stopEvent = e => {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    const handleDragEnter = e => {
+        stopEvent(e);
+    };
+
+    const handleDragLeave = e => {
+        stopEvent(e);
+        setDraggingOver(false);
+    };
+
+    const handleDragOver = e => {
+        stopEvent(e);
+        setDraggingOver(true);
+    };
+
+
     useEffect(() =>{
         axios.get('/api/categories').then(result=>{
             setcategories(result.data)
@@ -30,7 +54,7 @@ export default function ProductForm({
     }, [])
     async function saveProduct(ev) {
         ev.preventDefault();
-        const data = {title, description,price,images, category, properties:productProperties}
+        const data = {title, description,brand, price,images, category, properties:productProperties}
 
         if(_id){
             await axios.put('/api/products', {...data, _id} )
@@ -65,6 +89,25 @@ export default function ProductForm({
         }
 
     }
+
+    async function handleDrop(ev){
+        stopEvent(ev);
+        setDraggingOver(false);
+        const files = ev.dataTransfer.files;
+        if(files?.length>0){
+            const data = new FormData();
+            for(const file of files){
+
+                data.append('file',file);
+            }
+
+            const res = await axios.post('/api/upload',data);
+            setImages(oldImages => {
+                return[...oldImages, ...res.data.links];
+            })
+
+        }
+    }
     function updateImagesOrder(images){
         setImages(images)
     }
@@ -87,6 +130,7 @@ export default function ProductForm({
             return newProductProps
         })
     }
+
     return (
 
         <form onSubmit = {saveProduct}>
@@ -113,6 +157,7 @@ export default function ProductForm({
             ))}
             <label>Photos</label>
             <div className="mb-2 flex flex-wrap gap-2">
+
                 <ReactSortable list={images} className="flex flex-wrap gap-1" setList={updateImagesOrder}>
                 {images?.length && images.map(link => (
                     <div key = {link} className = "h-32">
@@ -120,15 +165,26 @@ export default function ProductForm({
                     </div>
                 ))}
                 </ReactSortable>
-                <label className="w-32 h-32 border flex items-center justify-center rounded-lg bg-gray-200 cursor-pointer">
+                <label
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    className="w-32 h-32 border flex items-center justify-center rounded-lg bg-gray-200 cursor-pointer">
                     Upload
-                    <input type="file" onChange={uploadPhoto} className="hidden"/>
+                    <input type="file"
+
+                           onChange={uploadPhoto} className="hidden" multiple/>
                 </label>
+
 
             </div>
             <label>Product Description</label>
             <textarea placeholder="description" value = {description}
                       onChange={ev=>setDescription(ev.target.value)}></textarea>
+            <label>Product Brand</label>
+            <textarea placeholder="brand" value = {brand}
+                      onChange={ev=>setBrand(ev.target.value)}></textarea>
             <label>Product Price</label>
             <input type="number" placeholder ="product price"value = {price}
                    onChange={ev=>setPrice(ev.target.value)}/>

@@ -23,7 +23,7 @@ export default function products(){
             <tbody>
                 {products.map(product => (
                 <tr key={product._id}>
-                    <td>{product.title}</td>
+                    <td>{product.title}, Product Id : {product._id}</td>
                     <td>
                         <Link href={'/products/edit/' + product._id}_>
                             Edit
