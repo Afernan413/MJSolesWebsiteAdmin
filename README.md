@@ -1,1 +1,1 @@
-This is the admin page for my NextJS ecommerce website.
+This is the admin page for my NextJS ecommerce website. Fixed
